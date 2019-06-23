@@ -8,7 +8,7 @@ services:
     ports:
       - "5000:5000"
     restart: unless-stopped
-    command: ["sh", "-c", "flask run"]
+    command: ["sh", "-c", "python -m flask run --host=0.0.0.0 --port=5000"]
     environment:
       - FLASK_APP=server.py
       - WINDSPEED_SERVICE_URL=http://windspeed:8080
