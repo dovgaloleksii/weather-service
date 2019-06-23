@@ -54,10 +54,12 @@ def get_external_service(date, url):
     try:
         resp = requests.get(f'{url}/?at={date}')
 
-        if resp.status_code == 404:
+        if resp.status_code == 200:
+            return resp.json()
+        elif resp.status_code == 404:
             raise InvalidUsage(resp.json()['message'], status_code=404)
 
-        return resp.json()
+        raise InvalidUsage('Unexpected Error')
     except requests.exceptions.ConnectionError:
         raise InvalidUsage(f"External service {url} is unavailable or dont have data for `{date}` query param")
 

@@ -1,8 +1,18 @@
 import datetime
 import unittest
+from collections import namedtuple
 from unittest.mock import patch
 
+import requests
+
 import server
+
+resp = namedtuple('Response', ['json', 'status_code'])
+future_day = (datetime.datetime.now() + datetime.timedelta(days=10)).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def error_resp(*args):
+    raise requests.exceptions.ConnectionError
 
 
 def get_external_service(date, external_service_url):
@@ -63,11 +73,21 @@ class ServerTestCase(unittest.TestCase):
         self.assertEqual(data.status_code, 400, "If get speeds with broken datetime format mi should"
                                                 " get 400 status code")
 
-    def test_unavailable_day(self):
-        future_day = (datetime.datetime.now() + datetime.timedelta(days=10)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    @patch('requests.get', return_value=resp(lambda: {'message': f'no sample found for date {future_day}'}, 404))
+    def test_unavailable_day(self, *args):
         data = self.app.get(f'/speeds?start={future_day}&end={future_day}', follow_redirects=True)
         self.assertEqual(data.json['message'], f'no sample found for date {future_day}')
         self.assertEqual(data.status_code, 404)
+
+    @patch('requests.get', return_value=resp(lambda: {'message': f'Service unavailable'}, 500))
+    def test_unavailable_service(self, *args):
+        data = self.app.get(f'/speeds?start={future_day}&end={future_day}', follow_redirects=True)
+        self.assertEqual(data.status_code, 400)
+
+    @patch('requests.get', side_effect=error_resp)
+    def test_unavailable_connection(self, *args):
+        data = self.app.get(f'/speeds?start={future_day}&end={future_day}', follow_redirects=True)
+        self.assertEqual(data.status_code, 400)
 
     @patch('server.get_external_service', side_effect=get_external_service)
     def test_fields_in_response(self, *args):
