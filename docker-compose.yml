@@ -26,9 +26,7 @@ services:
     environment:
       - WINDSPEED_SERVICE_URL=http://windspeed:8080
       - TEMPERATURE_SERVICE_URL=http://temperature:8000
-    depends_on:
-      - temperature
-      - windspeed
+
 
   temperature:
     image: pluspeterpublic/temperature:latest
