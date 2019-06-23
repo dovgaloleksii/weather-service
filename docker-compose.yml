@@ -1,0 +1,48 @@
+version: '3'
+
+services:
+  weather:
+    container_name: weather
+    build:
+      context: .
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    command: ["sh", "-c", "flask run"]
+    environment:
+      - FLASK_APP=server.py
+      - WINDSPEED_SERVICE_URL=http://windspeed:8080
+      - TEMPERATURE_SERVICE_URL=http://temperature:8000
+    depends_on:
+      - temperature
+      - windspeed
+      - test
+
+  test:
+    container_name: test
+    build:
+      context: .
+    command: ["sh", "-c", "python test.py"]
+    environment:
+      - WINDSPEED_SERVICE_URL=http://windspeed:8080
+      - TEMPERATURE_SERVICE_URL=http://temperature:8000
+    depends_on:
+      - temperature
+      - windspeed
+
+  temperature:
+    image: pluspeterpublic/temperature:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    restart: unless-stopped
+
+  windspeed:
+      image: pluspeterpublic/windspeed:latest
+      ports:
+        - "8080:8080"
+      environment:
+        - PORT=8080
+      restart: unless-stopped
+
